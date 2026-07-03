@@ -1,89 +1,98 @@
-import { useState } from 'react'
-import * as tasksApi from '../api/tasks'
+import { useEffect, useState } from 'react'
 
-export default function TaskForm({ task, onClose, onSaved }) {
-  const isEdit = !!task
-  const [title, setTitle] = useState(task?.title || '')
-  const [description, setDescription] = useState(task?.description || '')
+export default function TaskForm({ task, onClose, onSave }) {
+  const [form, setForm] = useState({ title: '', description: '' })
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (task) {
+      setForm({ title: task.title, description: task.description || '' })
+    } else {
+      setForm({ title: '', description: '' })
+    }
+    setError('')
+  }, [task])
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    if (!title.trim()) {
-      setError('El título es obligatorio')
-      return
-    }
-
-    setSaving(true)
+    setLoading(true)
     try {
-      const payload = { title: title.trim(), description: description.trim() }
-      const res = isEdit
-        ? await tasksApi.updateTask(task._id, payload)
-        : await tasksApi.createTask(payload)
-      onSaved(res.data)
+      await onSave(form)
       onClose()
     } catch (err) {
       setError(err.response?.data?.message || 'Error al guardar la tarea')
     } finally {
-      setSaving(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          {isEdit ? 'Editar tarea' : 'Nueva tarea'}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+        <h2 id="modal-title" className="text-lg font-bold text-gray-800 mb-4">
+          {task ? 'Editar tarea' : 'Nueva tarea'}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="title" className="text-sm font-medium text-gray-600">
+              Título <span className="text-red-500">*</span>
+            </label>
             <input
+              id="title"
+              name="title"
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="¿Qué necesitas hacer?"
+              value={form.title}
+              onChange={handleChange}
+              required
               autoFocus
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nombre de la tarea"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="description" className="text-sm font-medium text-gray-600">
+              Descripción
+            </label>
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              id="description"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-              placeholder="Opcional: añade más detalles..."
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Descripción opcional..."
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+              disabled={loading}
+              className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
             >
-              {saving ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear'}
+              {loading ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </form>

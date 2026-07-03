@@ -1,184 +1,214 @@
-import { useState, useEffect, useCallback } from 'react'
-import * as tasksApi from '../api/tasks'
-import TaskCard from '../components/TaskCard'
-import TaskForm from '../components/TaskForm'
-import Navbar from '../components/Navbar'
+import { useCallback, useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
+import TaskCard from "../components/TaskCard";
+import TaskForm from "../components/TaskForm";
+import { createTask, deleteTask, getMyTasks, toggleTask, updateTask } from '../services/tasks';
+import { useAuth } from '../context/AuthContext'
 
 export default function Dashboard() {
+  const { user, logout } = useAuth() 
+
   const [tasks, setTasks] = useState([])
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalTasks, setTotalTasks] = useState(0)
+
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const [totalTasks, setTotalTasks] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editingTask, setEditingTask] = useState(null)
+  const [error, setError] = useState('')
+
+  // null = cerrado | undefined = nueva tarea | task object = editar
+  const [modalTask, setModalTask] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const fetchTasks = useCallback(async () => {
-    setLoading(true)
     try {
-      const params = { page, limit: 10 }
-      if (search.trim()) params.search = search.trim()
-      if (status) params.status = status
-      const res = await tasksApi.getMyTasks(params)
-      setTasks(res.data.tasks)
-      setTotalPages(res.data.totalPages)
-      setTotalTasks(res.data.totalTasks)
+      const { data } = await getMyTasks({ search, status, page, limit })
+      // Normalizar id (usa _id de Mongoose si no existe `id`)
+      setTasks(data.tasks.map((t) => ({ ...t, id: t.id || t._id })))
+      setTotalTasks(data.totalTasks || 0)
+      setTotalPages(data.totalPages || 1)
     } catch {
-      // ignore
+      setError('No se pudieron cargar las tareas')
     } finally {
       setLoading(false)
     }
-  }, [page, search, status])
+  }, [search, status, page, limit])
 
   useEffect(() => {
     fetchTasks()
   }, [fetchTasks])
 
-  const handleUpdateTask = (updatedTask) => {
-    setTasks((prev) => prev.map((t) => (t._id === updatedTask._id ? updatedTask : t)))
-  }
-
-  const handleDeleteTask = (taskId) => {
-    setTasks((prev) => prev.filter((t) => t._id !== taskId))
-    setTotalTasks((prev) => prev - 1)
-  }
-
-  const handleSavedTask = (savedTask) => {
-    if (editingTask) {
-      handleUpdateTask(savedTask)
-    } else {
-      setTasks((prev) => [savedTask, ...prev])
-      setTotalTasks((prev) => prev + 1)
-    }
-  }
-
   const openCreate = () => {
-    setEditingTask(null)
-    setShowForm(true)
+    setModalTask(undefined)
+    setModalOpen(true)
   }
 
   const openEdit = (task) => {
-    setEditingTask(task)
-    setShowForm(true)
+    setModalTask(task)
+    setModalOpen(true)
   }
 
-  const closeForm = () => {
-    setShowForm(false)
-    setEditingTask(null)
+  const closeModal = () => {
+    setModalOpen(false)
+    setModalTask(null)
   }
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault()
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value)
     setPage(1)
+  }
+
+  const handleStatusChange = (e) => {
+    setStatus(e.target.value)
+    setPage(1)
+  }
+
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value))
+    setPage(1)
+  }
+
+  const handleSave = async (form) => {
+    if (modalTask) {
+      const { data } = await updateTask(modalTask.id, form)
+      const normalized = { ...data, id: data.id || data._id }
+      setTasks((prev) => prev.map((t) => (t.id === normalized.id ? normalized : t)))
+    } else {
+      const { data } = await createTask(form)
+      const normalized = { ...data, id: data.id || data._id }
+      setTasks((prev) => [normalized, ...prev])
+    }
+  }
+
+  const handleToggle = async (id) => {
+    const { data } = await toggleTask(id)
+    const normalized = { ...data, id: data.id || data._id }
+    setTasks((prev) => prev.map((t) => (t.id === normalized.id ? normalized : t)))
+  }
+
+  const handleDelete = async (id) => {
+    await deleteTask(id)
+    setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Mis tareas</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{totalTasks} tarea{totalTasks !== 1 ? 's' : ''}</p>
-          </div>
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Nueva tarea
-          </button>
-        </div>
+      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <form onSubmit={handleSearchSubmit} className="flex-1">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar tareas..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </form>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Buscar tareas..."
+            value={search}
+            onChange={handleSearchChange}
+            className="flex-1 border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
           <select
             value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
+            onChange={handleStatusChange}
+            className="border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">Todas</option>
             <option value="pending">Pendientes</option>
             <option value="completed">Completadas</option>
           </select>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-400 text-lg">No hay tareas aún</p>
-            <p className="text-gray-400 text-sm mt-1">Crea tu primera tarea para empezar</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <TaskCard
-                key={task._id}
-                task={task}
-                onUpdate={(updated) => handleUpdateTask(updated)}
-                onDelete={handleDeleteTask}
-                onUpdate={() => openEdit(task)}
-              />
-            ))}
-          </div>
+        {/* Botón nueva tarea */}
+        <button
+          onClick={openCreate}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors shadow-sm"
+        >
+          + Nueva tarea
+        </button>
+
+        {/* Error general */}
+        {error && (
+          <p className="text-red-500 text-sm text-center">{error}</p>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              Anterior
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`px-3 py-1.5 text-sm rounded-lg cursor-pointer ${
-                  p === page
-                    ? 'bg-indigo-600 text-white'
-                    : 'border border-gray-300 hover:bg-gray-100'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
+        {/* Loading */}
+        {loading && (
+          <p className="text-gray-400 text-sm text-center">Cargando tareas...</p>
         )}
+
+        {/* Sin tareas */}
+        {!loading && totalTasks === 0 && (
+          <p className="text-gray-400 text-sm text-center mt-8">
+            Todavía no tenés tareas. ¡Creá una!
+          </p>
+        )}
+
+        
+
+        <section>
+          <div className="flex items-center justify-between gap-6 my-4">
+            <select
+              value={limit}
+              onChange={handleLimitChange}
+              className="border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={2}>2 por página</option>
+              <option value={5}>5 por página</option>
+              <option value={10}>10 por página</option>
+              <option value={20}>20 por página</option>
+            </select>
+
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Total de tareas ({totalTasks})
+            </h2>
+
+            <div className="flex items-center gap-3">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 transition-opacity"
+              >
+                {"<"}
+              </button>
+              
+              <span className="text-sm text-gray-600 font-medium">
+                {page} / {totalPages}
+              </span>
+              
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 transition-opacity"
+              >
+                {">"}
+              </button>
+            </div>
+          </div>
+
+          <ul className="flex flex-col gap-2">
+            {tasks.map((task) => (
+              <li key={task.id}>
+                <TaskCard
+                  task={task}
+                  onToggle={handleToggle}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+
       </main>
 
-      {showForm && (
+      {modalOpen && (
         <TaskForm
-          task={editingTask}
-          onClose={closeForm}
-          onSaved={handleSavedTask}
+          task={modalTask}
+          onClose={closeModal}
+          onSave={handleSave}
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,84 +1,89 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-export default function Login() {
-  const { user, login } = useAuth()
+export default function LoginPage() {
+  const { login } = useAuth()
   const navigate = useNavigate()
+
   const [form, setForm] = useState({ user: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (user) return <Navigate to="/dashboard" replace />
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!form.user || !form.password) {
-      setError('Todos los campos son obligatorios')
-      return
-    }
     setLoading(true)
     try {
       await login(form)
-      navigate('/dashboard')
+      navigate('/tasks')
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión')
+      setError(err.response?.data?.message || 'Credenciales inválidas')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-center text-indigo-600 mb-2">MiniTaskManager</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">Inicia sesión para continuar</p>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Iniciar sesión</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="user" className="text-sm font-medium text-gray-600">
+              Usuario
+            </label>
             <input
+              id="user"
+              name="user"
               type="text"
               value={form.user}
-              onChange={(e) => setForm({ ...form, user: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Tu usuario"
-              autoFocus
+              onChange={handleChange}
+              required
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="tu_usuario"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-sm font-medium text-gray-600">
+              Contraseña
+            </label>
             <input
+              id="password"
+              name="password"
               type="password"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={handleChange}
+              required
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-colors"
           >
-            {loading ? 'Entrando...' : 'Iniciar sesión'}
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
-        <p className="text-sm text-gray-500 text-center mt-6">
-          ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-indigo-600 hover:underline font-medium">
-            Regístrate
+        <p className="text-sm text-center text-gray-500 mt-6">
+          ¿No tenés cuenta?{' '}
+          <Link to="/register" className="text-blue-600 hover:underline font-medium">
+            Registrate
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   )
 }

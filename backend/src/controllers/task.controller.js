@@ -18,7 +18,8 @@ async function getTasksController(req, res) {
             search: req.query.search,
             status: req.query.status,
             page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 10
+            limit: parseInt(req.query.limit) || 10,
+            order: req.query.order || 1
         });
         res.status(200).json(tasks);
     } catch (error) {

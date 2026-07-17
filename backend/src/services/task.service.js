@@ -15,7 +15,9 @@ async function createTask(taskData) {
 async function getTasksByUser(userId, filter = {}) {
     return new Promise(async (resolve, reject) => {
         try {
-            const { search, status, page = 1, limit = 10 } = filter;
+            const { search, status, page = 1, limit = 10, order = 1 } = filter;
+
+            const sortOrder = Number(order);
 
             const query = { user: userId };
 
@@ -42,7 +44,7 @@ async function getTasksByUser(userId, filter = {}) {
             const tasks = await Task.find(query)
                 .skip((page - 1) * limit)
                 .limit(limit)
-                .sort({ createdAt: 1 });
+                .sort({ createdAt: sortOrder });
 
             const total = await Task.countDocuments(query);
 

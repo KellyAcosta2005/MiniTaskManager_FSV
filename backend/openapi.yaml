@@ -157,6 +157,13 @@ paths:
             type: integer
             minimum: 1
             default: 10
+        - in: query
+          name: order
+          schema:
+            type: integer
+            enum: [1, -1]
+            default: 1
+          description: Sort direction by createdAt (1=ascending, -1=descending)
       responses:
         '200':
           description: Paginated task list

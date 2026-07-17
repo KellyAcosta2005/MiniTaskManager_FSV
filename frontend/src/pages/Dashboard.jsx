@@ -3,10 +3,8 @@ import Navbar from "../components/Navbar";
 import TaskCard from "../components/TaskCard";
 import TaskForm from "../components/TaskForm";
 import { createTask, deleteTask, getMyTasks, toggleTask, updateTask } from '../services/tasks';
-import { useAuth } from '../context/AuthContext'
 
 export default function Dashboard() {
-  const { user, logout } = useAuth() 
 
   const [tasks, setTasks] = useState([])
 

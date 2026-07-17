@@ -26,6 +26,11 @@ async function getTasksController(req, res) {
     }
 }
 
+function handleTaskError(res, error) {
+    const status = error.message.toLowerCase().includes('not found') ? 404 : 400;
+    res.status(status).json({ message: error.message });
+}
+
 async function updateTaskController(req, res) {
     try {
         const userId = req.user._id;
@@ -34,7 +39,7 @@ async function updateTaskController(req, res) {
         const task = await updateTask(taskId, userId, { title, description });
         res.status(200).json(task);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        handleTaskError(res, error);
     }
 }
 
@@ -45,7 +50,7 @@ async function deleteTaskController(req, res) {
         await deleteTask(taskId, userId);
         res.status(200).json({ message: "Task deleted successfully" });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        handleTaskError(res, error);
     }
 }
 
@@ -56,7 +61,7 @@ async function toggleTaskController(req, res) {
         const task = await toggleTask(taskId, userId);
         res.status(200).json(task);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        handleTaskError(res, error);
     }
 }
 

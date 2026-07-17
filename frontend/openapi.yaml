@@ -66,8 +66,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -166,6 +164,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskListResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -212,6 +212,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -234,6 +236,8 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
               example:
                 message: Task deleted successfully
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '404':

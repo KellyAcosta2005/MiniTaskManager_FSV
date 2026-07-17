@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
+  const [order, setOrder] = useState(1);
 
   const [totalTasks, setTotalTasks] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -25,7 +26,7 @@ export default function Dashboard() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const { data } = await getMyTasks({ search, status, page, limit })
+      const { data } = await getMyTasks({ search, status, page, limit, order })
       // Normalizar id (usa _id de Mongoose si no existe `id`)
       setTasks(data.tasks.map((t) => ({ ...t, id: t.id || t._id })))
       setTotalTasks(data.totalTasks || 0)
@@ -35,7 +36,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [search, status, page, limit])
+  }, [search, status, page, limit, order])
 
   useEffect(() => {
     fetchTasks()
@@ -94,6 +95,11 @@ export default function Dashboard() {
     setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
+  const handleOrder = async () => {
+    setOrder((prev) => (prev === 1 ? -1 : 1))
+    setPage(1)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -146,16 +152,24 @@ export default function Dashboard() {
 
         <section>
           <div className="flex items-center justify-between gap-6 my-4">
-            <select
-              value={limit}
-              onChange={handleLimitChange}
-              className="border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={2}>2 por página</option>
-              <option value={5}>5 por página</option>
-              <option value={10}>10 por página</option>
-              <option value={20}>20 por página</option>
-            </select>
+            <div>
+              <button
+                  onClick={handleOrder}
+                  className="px-3 py-2 bg-gray-200 rounded disabled:opacity-50 transition-opacity"
+                >
+                  {order === 1 ? "⬆️" : "⬇️"}
+                </button>
+              <select
+                value={limit}
+                onChange={handleLimitChange}
+                className="border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={2}>2 por página</option>
+                <option value={5}>5 por página</option>
+                <option value={10}>10 por página</option>
+                <option value={20}>20 por página</option>
+              </select>
+            </div>
 
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Total de tareas ({totalTasks})

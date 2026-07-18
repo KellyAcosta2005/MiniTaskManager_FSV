@@ -4,6 +4,7 @@ import ProtectedRoute from '../components/ProtectedRoute'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import Dashboard from '../pages/Dashboard'
+import WPPosts from '../pages/WPPosts'
 
 export default function App() {
   return (
@@ -17,6 +18,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wp-posts"
+            element={
+              <ProtectedRoute>
+                <WPPosts />
               </ProtectedRoute>
             }
           />

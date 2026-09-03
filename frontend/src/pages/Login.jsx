@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await login(form)
-      navigate('/tasks')
+      navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'Credenciales inválidas')
     } finally {

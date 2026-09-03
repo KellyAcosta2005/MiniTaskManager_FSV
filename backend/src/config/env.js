@@ -13,4 +13,5 @@ export const env = {
     MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017",
     JWT_SECRET: process.env.JWT_SECRET || "some_secret_key",
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "24h",
+    FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
 }

@@ -20,7 +20,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await register(form)
-      navigate('/tasks')
+      navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'Error al registrarse')
     } finally {
